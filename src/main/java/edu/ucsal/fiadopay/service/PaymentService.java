@@ -24,7 +24,7 @@ import java.net.http.HttpResponse;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.*;
 
 @Service
 public class PaymentService {
@@ -34,6 +34,7 @@ public class PaymentService {
     private final ObjectMapper objectMapper;
     private final EncodingService encodingService;
     private final PaymentMethodRegistry paymentMethodRegistry;
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5);
 
     @Value("${fiadopay.webhook-secret}")
     String secret;
@@ -179,8 +180,8 @@ public class PaymentService {
             d.setDelivered(res.statusCode() >= 200 && res.statusCode() < 300);
             deliveries.save(d);
             if (!d.isDelivered() && d.getAttempts() < 5) {
-                Thread.sleep(1000L * d.getAttempts());
-                tryDeliver(deliveryId);
+                long delay = d.getAttempts() * 1000L;
+                scheduleRetry(deliveryId, delay);
             }
         } catch (Exception e) {
             d.setAttempts(d.getAttempts() + 1);
@@ -188,13 +189,14 @@ public class PaymentService {
             d.setDelivered(false);
             deliveries.save(d);
             if (d.getAttempts() < 5) {
-                try {
-                    Thread.sleep(1000L * d.getAttempts());
-                } catch (InterruptedException ignored) {
-                }
-                tryDeliver(deliveryId);
+                long delay = d.getAttempts() * 1000L;
+                scheduleRetry(deliveryId, delay);
             }
         }
+    }
+
+    private void scheduleRetry(Long deliveryId, long delayMs) {
+        scheduler.schedule(() -> tryDeliver(deliveryId), delayMs, TimeUnit.MILLISECONDS);
     }
 
 
