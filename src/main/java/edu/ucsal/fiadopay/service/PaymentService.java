@@ -6,6 +6,8 @@ import edu.ucsal.fiadopay.domain.Payment;
 import edu.ucsal.fiadopay.domain.WebhookDelivery;
 import edu.ucsal.fiadopay.dto.PaymentRequest;
 import edu.ucsal.fiadopay.dto.PaymentResponse;
+import edu.ucsal.fiadopay.provider.payment.PaymentProvider;
+import edu.ucsal.fiadopay.registry.PaymentMethodRegistry;
 import edu.ucsal.fiadopay.repo.PaymentRepository;
 import edu.ucsal.fiadopay.repo.WebhookDeliveryRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -32,6 +33,7 @@ public class PaymentService {
     private final WebhookDeliveryRepository deliveries;
     private final ObjectMapper objectMapper;
     private final EncodingService encodingService;
+    private final PaymentMethodRegistry paymentMethodRegistry;
 
     @Value("${fiadopay.webhook-secret}")
     String secret;
@@ -40,12 +42,13 @@ public class PaymentService {
     @Value("${fiadopay.failure-rate}")
     double failRate;
 
-    public PaymentService(MerchantService merchantService, PaymentRepository payments, WebhookDeliveryRepository deliveries, ObjectMapper objectMapper, EncodingService encodingService) {
+    public PaymentService(MerchantService merchantService, PaymentRepository payments, WebhookDeliveryRepository deliveries, ObjectMapper objectMapper, EncodingService encodingService, PaymentMethodRegistry paymentMethodRegistry) {
         this.merchantService = merchantService;
         this.payments = payments;
         this.deliveries = deliveries;
         this.objectMapper = objectMapper;
         this.encodingService = encodingService;
+        this.paymentMethodRegistry = paymentMethodRegistry;
     }
 
     @Transactional
@@ -58,14 +61,9 @@ public class PaymentService {
             if (existing.isPresent()) return toResponse(existing.get());
         }
 
-        Double interest = null;
-        BigDecimal total = req.amount();
-        if ("CARD".equalsIgnoreCase(req.method()) && req.installments() != null && req.installments() > 1) {
-            interest = 1.0; // 1%/mês
-            var base = new BigDecimal("1.01");
-            var factor = base.pow(req.installments());
-            total = req.amount().multiply(factor).setScale(2, RoundingMode.HALF_UP);
-        }
+        PaymentProvider paymentProvider = paymentMethodRegistry.getProvider(req.method());
+        Double interest = paymentProvider.interest();
+        BigDecimal total = paymentProvider.calculateTotal(req.amount(), req.installments());
 
         var payment = Payment.builder()
                 .id("pay_" + UUID.randomUUID().toString().substring(0, 8))
@@ -73,7 +71,7 @@ public class PaymentService {
                 .method(req.method().toUpperCase())
                 .amount(req.amount())
                 .currency(req.currency())
-                .installments(req.installments() == null ? 1 : req.installments())
+                .installments(req.installments())
                 .monthlyInterest(interest)
                 .totalWithInterest(total)
                 .status(Payment.Status.PENDING)
