@@ -35,6 +35,7 @@ public class PaymentService {
     private final EncodingService encodingService;
     private final PaymentMethodRegistry paymentMethodRegistry;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5);
+    private final ExecutorService executorService = Executors.newFixedThreadPool(5);
 
     @Value("${fiadopay.webhook-secret}")
     String secret;
@@ -84,8 +85,7 @@ public class PaymentService {
 
         payments.save(payment);
 
-        CompletableFuture.runAsync(() -> processAndWebhook(payment.getId()));
-
+        executorService.submit( () -> processAndWebhook(payment.getId()));
         return toResponse(payment);
     }
 
@@ -159,8 +159,7 @@ public class PaymentService {
                 .delivered(false)
                 .lastAttemptAt(null)
                 .build());
-
-        CompletableFuture.runAsync(() -> tryDeliver(delivery.getId()));
+        executorService.submit(() -> tryDeliver(delivery.getId()));
     }
 
     private void tryDeliver(Long deliveryId) {
