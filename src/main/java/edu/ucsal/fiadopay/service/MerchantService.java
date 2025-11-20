@@ -4,6 +4,7 @@ import edu.ucsal.fiadopay.domain.Merchant;
 import edu.ucsal.fiadopay.dto.MerchantRequest;
 import edu.ucsal.fiadopay.dto.MerchantResponse;
 import edu.ucsal.fiadopay.repo.MerchantRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -35,6 +36,29 @@ public class MerchantService {
         merchantRepository.save(merchant);
 
         return new MerchantResponse(merchant);
+    }
+
+    protected Merchant merchantFromAuth(String auth) {
+        if (auth == null || !auth.startsWith("Bearer FAKE-")) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+        var raw = auth.substring("Bearer FAKE-".length());
+        long id;
+        Merchant merchant;
+        try {
+            id = Long.parseLong(raw);
+            merchant = findMerchantById(id);
+        } catch (NumberFormatException | EntityNotFoundException ex) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+        if (merchant.getStatus() != Merchant.Status.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+        return merchant;
+    }
+
+    protected Merchant findMerchantById(long id) throws EntityNotFoundException {
+        return merchantRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Merchant not found"));
     }
 
 }

@@ -2,12 +2,10 @@ package edu.ucsal.fiadopay.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.ucsal.fiadopay.criptography.EncodingService;
-import edu.ucsal.fiadopay.domain.Merchant;
 import edu.ucsal.fiadopay.domain.Payment;
 import edu.ucsal.fiadopay.domain.WebhookDelivery;
 import edu.ucsal.fiadopay.dto.PaymentRequest;
 import edu.ucsal.fiadopay.dto.PaymentResponse;
-import edu.ucsal.fiadopay.repo.MerchantRepository;
 import edu.ucsal.fiadopay.repo.PaymentRepository;
 import edu.ucsal.fiadopay.repo.WebhookDeliveryRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,7 +27,7 @@ import java.util.concurrent.CompletableFuture;
 
 @Service
 public class PaymentService {
-    private final MerchantRepository merchants;
+    private final MerchantService merchantService;
     private final PaymentRepository payments;
     private final WebhookDeliveryRepository deliveries;
     private final ObjectMapper objectMapper;
@@ -42,35 +40,17 @@ public class PaymentService {
     @Value("${fiadopay.failure-rate}")
     double failRate;
 
-    public PaymentService(MerchantRepository merchants, PaymentRepository payments, WebhookDeliveryRepository deliveries, ObjectMapper objectMapper, EncodingService encodingService) {
-        this.merchants = merchants;
+    public PaymentService(MerchantService merchantService, PaymentRepository payments, WebhookDeliveryRepository deliveries, ObjectMapper objectMapper, EncodingService encodingService) {
+        this.merchantService = merchantService;
         this.payments = payments;
         this.deliveries = deliveries;
         this.objectMapper = objectMapper;
         this.encodingService = encodingService;
     }
 
-    private Merchant merchantFromAuth(String auth) {
-        if (auth == null || !auth.startsWith("Bearer FAKE-")) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-        }
-        var raw = auth.substring("Bearer FAKE-".length());
-        long id;
-        try {
-            id = Long.parseLong(raw);
-        } catch (NumberFormatException ex) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-        }
-        var merchant = merchants.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
-        if (merchant.getStatus() != Merchant.Status.ACTIVE) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-        }
-        return merchant;
-    }
-
     @Transactional
     public PaymentResponse createPayment(String auth, String idemKey, PaymentRequest req) {
-        var merchant = merchantFromAuth(auth);
+        var merchant = merchantService.merchantFromAuth(auth);
         var mid = merchant.getId();
 
         if (idemKey != null) {
@@ -116,7 +96,7 @@ public class PaymentService {
     }
 
     public Map<String, Object> refund(String auth, String paymentId) {
-        var merchant = merchantFromAuth(auth);
+        var merchant = merchantService.merchantFromAuth(auth);
         var p = payments.findById(paymentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (!merchant.getId().equals(p.getMerchantId())) {
@@ -146,7 +126,7 @@ public class PaymentService {
     }
 
     private void sendWebhook(Payment p) {
-        var merchant = merchants.findById(p.getMerchantId()).orElse(null);
+        var merchant = merchantService.findMerchantById(p.getMerchantId());
         if (merchant == null || merchant.getWebhookUrl() == null || merchant.getWebhookUrl().isBlank()) return;
 
         String payload;
