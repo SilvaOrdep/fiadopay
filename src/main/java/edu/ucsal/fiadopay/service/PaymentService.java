@@ -1,14 +1,12 @@
 package edu.ucsal.fiadopay.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import edu.ucsal.fiadopay.criptography.Encodable;
-import edu.ucsal.fiadopay.criptography.EncodingStrategy;
-import edu.ucsal.fiadopay.criptography.Hmac;
-import edu.ucsal.fiadopay.dto.PaymentRequest;
-import edu.ucsal.fiadopay.dto.PaymentResponse;
+import edu.ucsal.fiadopay.criptography.EncodingService;
 import edu.ucsal.fiadopay.domain.Merchant;
 import edu.ucsal.fiadopay.domain.Payment;
 import edu.ucsal.fiadopay.domain.WebhookDelivery;
+import edu.ucsal.fiadopay.dto.PaymentRequest;
+import edu.ucsal.fiadopay.dto.PaymentResponse;
 import edu.ucsal.fiadopay.repo.MerchantRepository;
 import edu.ucsal.fiadopay.repo.PaymentRepository;
 import edu.ucsal.fiadopay.repo.WebhookDeliveryRepository;
@@ -25,7 +23,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -36,6 +33,7 @@ public class PaymentService {
     private final PaymentRepository payments;
     private final WebhookDeliveryRepository deliveries;
     private final ObjectMapper objectMapper;
+    private final EncodingService encodingService;
 
     @Value("${fiadopay.webhook-secret}")
     String secret;
@@ -44,11 +42,12 @@ public class PaymentService {
     @Value("${fiadopay.failure-rate}")
     double failRate;
 
-    public PaymentService(MerchantRepository merchants, PaymentRepository payments, WebhookDeliveryRepository deliveries, ObjectMapper objectMapper) {
+    public PaymentService(MerchantRepository merchants, PaymentRepository payments, WebhookDeliveryRepository deliveries, ObjectMapper objectMapper, EncodingService encodingService) {
         this.merchants = merchants;
         this.payments = payments;
         this.deliveries = deliveries;
         this.objectMapper = objectMapper;
+        this.encodingService = encodingService;
     }
 
     private Merchant merchantFromAuth(String auth) {
@@ -168,9 +167,7 @@ public class PaymentService {
             return;
         }
 
-        EncodingStrategy encodingStrategy = new EncodingStrategy(new Hmac());
-
-        String signature = encodingStrategy.executeEncodingStrategy(payload, secret);
+        String signature = encodingService.executeEncodingStrategy(payload, secret);
 
         var delivery = deliveries.save(WebhookDelivery.builder()
                 .eventId("evt_" + UUID.randomUUID().toString().substring(0, 8))

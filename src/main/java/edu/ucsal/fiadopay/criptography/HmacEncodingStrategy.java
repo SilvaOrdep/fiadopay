@@ -1,8 +1,11 @@
 package edu.ucsal.fiadopay.criptography;
 
+import org.springframework.stereotype.Component;
+
 import java.util.Base64;
 
-public class Hmac implements Encodable{
+@Component
+public class HmacEncodingStrategy implements Encodable{
     @Override
     public String encode(String payload, String secret) {
         try {
