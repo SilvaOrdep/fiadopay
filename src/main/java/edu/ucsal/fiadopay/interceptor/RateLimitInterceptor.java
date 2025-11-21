@@ -1,4 +1,4 @@
-package edu.ucsal.fiadopay.Interceptor;
+package edu.ucsal.fiadopay.interceptor;
 
 import edu.ucsal.fiadopay.annotation.RateLimit;
 import jakarta.servlet.http.HttpServletRequest;
