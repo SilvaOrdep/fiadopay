@@ -388,7 +388,7 @@ Payment.builder()
 
 ### 9. Concorrência em Idempotência
 **Problema**: Race condition possível entre verificação e criação de pagamento idempotente.
-**Impacato**: Raro, mas possível duplicação em alta concorrência.
+**Impacto**: Raro, mas possível duplicação em alta concorrência.
 **Mitigação Futura**: Lock pessimista ou SELECT FOR UPDATE.
 
 ### 10. Falta de Monitoramento
