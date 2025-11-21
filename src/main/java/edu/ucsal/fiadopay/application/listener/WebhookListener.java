@@ -3,11 +3,11 @@ package edu.ucsal.fiadopay.application.listener;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.ucsal.fiadopay.application.dto.MerchantWebhookDto;
 import edu.ucsal.fiadopay.application.dto.PaymentStatusUpdateDto;
-import edu.ucsal.fiadopay.infrastructure.security.criptography.EncodingService;
-import edu.ucsal.fiadopay.domain.model.WebhookDelivery;
 import edu.ucsal.fiadopay.application.dto.PaymentUpdatedEvent;
+import edu.ucsal.fiadopay.domain.model.WebhookDelivery;
 import edu.ucsal.fiadopay.domain.repository.MerchantRepository;
 import edu.ucsal.fiadopay.domain.repository.WebhookDeliveryRepository;
+import edu.ucsal.fiadopay.infrastructure.security.criptography.EncodingService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
@@ -18,7 +18,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Instant;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -90,15 +89,13 @@ public class WebhookListener {
     private void tryDeliver(Long deliveryId) {
         var d = deliveries.findById(deliveryId).orElse(null);
         if (d == null) return;
-        try {
-            var client = HttpClient.newHttpClient();
+        try (var client = HttpClient.newHttpClient();) {
             var req = HttpRequest.newBuilder(URI.create(d.getTargetUrl()))
                     .header("Content-Type", "application/json")
                     .header("X-Event-Type", d.getEventType())
                     .header("X-Signature", d.getSignature())
                     .POST(HttpRequest.BodyPublishers.ofString(d.getPayload()))
                     .build();
-            System.out.println("payload enviado: "+d.getPayload());
             var res = client.send(req, HttpResponse.BodyHandlers.ofString());
             d.setAttempts(d.getAttempts() + 1);
             d.setLastAttemptAt(Instant.now());
