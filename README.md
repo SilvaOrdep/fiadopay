@@ -1,16 +1,5 @@
 # FiadoPay - Gateway de Pagamento Simulado
 
-## Sumário
-
-- [Como Executar](#-como-executar)
-- [Endpoints da API](#-endpoints-da-api)
-- [Decisões de Design](#-decisões-de-design)
-- [Anotações Customizadas](#-anotações-customizadas)
-- [Mecanismo de Reflexão](#-mecanismo-de-reflexão)
-- [Uso de Threads](#-uso-de-threads)
-- [Padrões Aplicados](#-padrões-aplicados)
-- [Limites Conhecidos](#-limites-conhecidos)
----
 ## Como Executar
 
 ### Executando a Aplicação
