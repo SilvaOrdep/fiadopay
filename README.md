@@ -1,3 +1,7 @@
+# Vídeo de apresentação e explicação da Refatoração FiadoPay: 
+### [FiadoPay - POOA MAT T1](https://youtu.be/R3a0ADzUEl0)
+
+
 # FiadoPay - Gateway de Pagamento Simulado
 
 ## Como Executar
