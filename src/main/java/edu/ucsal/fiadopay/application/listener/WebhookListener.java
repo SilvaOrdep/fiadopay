@@ -1,6 +1,8 @@
 package edu.ucsal.fiadopay.application.listener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.ucsal.fiadopay.application.dto.MerchantWebhookDto;
+import edu.ucsal.fiadopay.application.dto.PaymentStatusUpdateDto;
 import edu.ucsal.fiadopay.infrastructure.security.criptography.EncodingService;
 import edu.ucsal.fiadopay.domain.model.WebhookDelivery;
 import edu.ucsal.fiadopay.application.dto.PaymentUpdatedEvent;
@@ -52,16 +54,16 @@ public class WebhookListener {
 
         String payload;
         try {
-            var data = Map.of(
-                    "paymentId", p.getId(),
-                    "status", p.getStatus().name(),
-                    "occurredAt", Instant.now().toString()
+            var data = new PaymentStatusUpdateDto(
+                    p.getId(),
+                    p.getStatus().name(),
+                    Instant.now().toString()
             );
-            var event = Map.of(
-                    "id", "evt_" + UUID.randomUUID().toString().substring(0, 8),
-                    "type", "payment.updated",
-                    "data", data
-            );
+
+            var event = new MerchantWebhookDto("evt_" + UUID.randomUUID().toString().substring(0, 8),
+                    "payment.updated",
+                    data);
+
             payload = objectMapper.writeValueAsString(event);
         } catch (Exception e) {
             // fallback mínimo: não envia webhook se falhar a serialização
@@ -96,6 +98,7 @@ public class WebhookListener {
                     .header("X-Signature", d.getSignature())
                     .POST(HttpRequest.BodyPublishers.ofString(d.getPayload()))
                     .build();
+            System.out.println("payload enviado: "+d.getPayload());
             var res = client.send(req, HttpResponse.BodyHandlers.ofString());
             d.setAttempts(d.getAttempts() + 1);
             d.setLastAttemptAt(Instant.now());
