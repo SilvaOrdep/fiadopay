@@ -1,5 +1,6 @@
 package edu.ucsal.fiadopay.controller;
 
+import edu.ucsal.fiadopay.annotation.RateLimit;
 import edu.ucsal.fiadopay.dto.PaymentRequest;
 import edu.ucsal.fiadopay.dto.PaymentResponse;
 import edu.ucsal.fiadopay.dto.RefundRequest;
@@ -19,6 +20,7 @@ public class PaymentController {
 
   @PostMapping("/payments")
   @SecurityRequirement(name = "bearerAuth")
+  @RateLimit
   public ResponseEntity<PaymentResponse> create(
       @Parameter(hidden = true) @RequestHeader("Authorization") String auth,
       @RequestHeader(value="Idempotency-Key", required=false) String idemKey,
@@ -34,6 +36,7 @@ public class PaymentController {
   }
 
   @PostMapping("/refunds")
+  @RateLimit(maxRequest = 5)
   @SecurityRequirement(name = "bearerAuth")
   public java.util.Map<String,Object> refund(@Parameter(hidden = true) @RequestHeader("Authorization") String auth,
                                    @RequestBody @Valid RefundRequest body) {
