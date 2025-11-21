@@ -1,4 +1,4 @@
-package edu.ucsal.fiadopay.infrastructure.security.ratelimit;
+package edu.ucsal.fiadopay.infrastructure.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -1,5 +1,6 @@
 package edu.ucsal.fiadopay.infrastructure.security.ratelimit;
 
+import edu.ucsal.fiadopay.infrastructure.annotation.RateLimit;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
