@@ -62,7 +62,17 @@ Este simulador utiliza as seguintes variáveis de configuração para replicar c
 | `fiadopay.processing-delay-ms` | `long` | Atraso em milissegundos antes que o pagamento mude de PENDING. | `3000` (3 segundos) |
 | `fiadopay.failure-rate` | `double` | Probabilidade de recusa do pagamento (entre 0.0 e 1.0). | `0.2` (20% de falha) |
 
-**Exemplo no seu `application.properties`:**
-```properties
-fiadopay.processing-delay-ms=3000
-fiadopay.failure-rate=0.2
+curl -X POST http://localhost:8080/fiadopay/gateway/payments/<paymentId>/refund \
+  -H "Authorization: Bearer FAKE-<merchantId>"
+
+{
+  "id": "evt_xxxxxxxx",
+  "type": "payment.updated",
+  "data": {
+    "paymentId": "pay_xxxxxxxx",
+    "status": "APPROVED" | "DECLINED" | "REFUNDED",
+    "occurredAt": "2025-11-20T23:54:00.000Z"
+  }
+}
+
+
