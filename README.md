@@ -33,3 +33,6 @@ curl -X POST http://localhost:8080/fiadopay/gateway/payments   -H "Authorization
 4) *Consultar pagamento*
 bash
 curl http://localhost:8080/fiadopay/gateway/payments/<paymentId>
+
+
+
