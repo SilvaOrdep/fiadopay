@@ -54,7 +54,7 @@ curl -X POST http://localhost:8080/fiadopay/auth/token \
 ```
 
 
-### 3 Criar Pagamento
+### 3️⃣ Criar Pagamento
 
 ```bash
 curl -X POST http://localhost:8080/fiadopay/gateway/payments \
@@ -360,8 +360,39 @@ Payment.builder()
 **Onde**: Pacote `dto` (`PaymentRequest`, `PaymentResponse`, etc.)
 
 **Propósito**: Separar representação interna (entidades) de representação de API (DTOs).
-
 ---
+## Teste RestAssured e validação OpenAPI
+**Objetivo do teste:** Evitar que alterações no backend quebrem clientes que dependem do contrato da API (Swagger/OpenAPI).
+Se a API retornar campos extras, tipos incorretos ou faltar algum atributo obrigatório, o teste falha:
+**Exemplo:**
+```java
+Invalid response: Required property 'amount' missing
+```
+***Habilitando validação no Maven***
+PLocalize a seção <build> e insira o plugin abaixo dentro de <plugins>:
+
+```java
+<plugin>
+    <groupId>com.atlassian.oai</groupId>
+    <artifactId>swagger-request-validator-maven-plugin</artifactId>
+    <version>2.36.0</version>
+    <executions>
+        <execution>
+            <id>validate-openapi</id>
+            <phase>verify</phase>
+            <goals>
+                <goal>validate</goal>
+            </goals>
+        </execution>
+    </executions>
+</plugin>
+```
+**Rodar:**
+```
+./mvnw verify
+```
+**Resultado esperado:**
+Se gerar o erro: ```[ERROR] 400 Invalid response: Required property``` rodou corretamente, pois tem como objetivo proteger contra mudanças que quebrem clientes.
 
 ## Limites Conhecidos
 
